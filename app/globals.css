@@ -2,31 +2,44 @@
 
 @layer base {
   :root {
-    --bg-color: #fafafa;
-    --paper: #fbfbfb;
-    --text-color: #111111;
-    --text-muted: #666666;
-    --border-subtle: rgba(0, 0, 0, 0.08);
+    --paper: #ECEAE4;
+    --ink: #121212;
+    --night: #07081a;
+    --m: clamp(20px, 2.8vw, 48px);
+    --g: 0px;
+    --cols: 12;
+    --ease: cubic-bezier(0.19, 1, 0.22, 1);
+    --io: cubic-bezier(0.77, 0, 0.18, 1);
+    --rule: rgba(18, 18, 18, 0.16);
+    --top: clamp(78px, 10.5vh, 104px);
     --font-sans: "Inter Tight", "Helvetica Neue", Helvetica, Arial, "Noto Sans JP", system-ui, sans-serif;
     --font-serif: "Instrument Serif", "Times New Roman", Georgia, "Noto Sans JP", serif;
     --font-mono: "DM Mono", ui-monospace, SFMono-Regular, Menlo, "Noto Sans JP", monospace;
     --font-jp: "Noto Sans JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", system-ui, sans-serif;
-    --ease: cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   html {
     background-color: var(--paper);
-    color: var(--text-color);
+    color: var(--ink);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
     overflow-x: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
   }
 
   body {
     min-height: 100vh;
-    background: transparent;
+    background: var(--paper);
     margin: 0;
     padding: 0;
   }
@@ -95,15 +108,4 @@
 a:hover .aw-u {
   background-position: 0 100%;
   background-size: 100% 1px;
-}
-
-/* Glass & Canvas overlays */
-.canvas-container {
-  pointer-events: auto;
-}
-
-/* Retro Mode scanlines & animations */
-@keyframes crtScan {
-  0% { background-position: 0 0; }
-  100% { background-position: 0 100%; }
 }
