@@ -11,6 +11,7 @@ interface DreamShiftProps {
 }
 
 interface MemoryNode {
+  id: string;
   title: string;
   category: string;
   year: string;
@@ -26,56 +27,72 @@ export default function DreamShift({ onExit }: DreamShiftProps) {
   const [shardsCount, setShardsCount] = useState(0);
   const [activeShard, setActiveShard] = useState<MemoryNode | null>(null);
   const [coords, setCoords] = useState({ x: 0, y: 0, z: 0 });
-  const [hudMessage, setHudMessage] = useState("PILOT WITH MOUSE / WASD / ARROWS TO EXPLORE MEMORY REALM");
+  const [hudMessage, setHudMessage] = useState("PILOT: MOUSE / WASD / DRAG TO COLLECT MEMORY SHARDS");
+  const [soundOn, setSoundOn] = useState(false);
+
+  useEffect(() => {
+    const engine = getSoundEngine();
+    setSoundOn(!engine.getMuted());
+  }, []);
+
+  const handleSoundToggle = () => {
+    const engine = getSoundEngine();
+    const isNowOn = engine.toggleMute();
+    setSoundOn(isNowOn);
+  };
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const width = window.innerWidth;
-    const height = window.innerHeight;
+    let width = window.innerWidth;
+    let height = window.innerHeight;
 
-    // Scene, Fog & Camera
+    // Scene, Fog & Perspective Camera
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x080711);
-    scene.fog = new THREE.FogExp2(0x080711, 0.025);
+    scene.background = new THREE.Color(0x06050e);
+    scene.fog = new THREE.FogExp2(0x06050e, 0.022);
 
-    const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 500);
+    const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 600);
     camera.position.set(0, 0, 18);
 
     // Renderer
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: "high-performance" });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.4;
+    renderer.toneMappingExposure = 1.35;
 
-    // Lighting
-    const ambient = new THREE.AmbientLight(0x403b58, 2.0);
+    // Cosmic Lighting
+    const ambient = new THREE.AmbientLight(0x433d59, 2.2);
     scene.add(ambient);
 
-    const dirLight = new THREE.DirectionalLight(0xb4a4ff, 2.5);
-    dirLight.position.set(20, 40, 20);
-    scene.add(dirLight);
+    const dirLight1 = new THREE.DirectionalLight(0xb4a4ff, 2.8);
+    dirLight1.position.set(25, 45, 25);
+    scene.add(dirLight1);
 
-    const centerLight = new THREE.PointLight(0x76b5ff, 3.0, 50);
-    centerLight.position.set(0, 5, 0);
+    const dirLight2 = new THREE.DirectionalLight(0x60a5fa, 1.8);
+    dirLight2.position.set(-25, -20, -10);
+    scene.add(dirLight2);
+
+    const centerLight = new THREE.PointLight(0x8bc2ff, 3.5, 60);
+    centerLight.position.set(0, 4, 0);
     scene.add(centerLight);
 
-    // Cosmic Particle Field
-    const particleCount = 2000;
+    // Particle Star Field
+    const particleCount = 2400;
     const particleGeom = new THREE.BufferGeometry();
     const positions = new Float32Array(particleCount * 3);
     const colors = new Float32Array(particleCount * 3);
 
     for (let i = 0; i < particleCount * 3; i += 3) {
-      positions[i] = (Math.random() - 0.5) * 160;
-      positions[i + 1] = (Math.random() - 0.5) * 120;
-      positions[i + 2] = (Math.random() - 0.5) * 160;
+      positions[i] = (Math.random() - 0.5) * 180;
+      positions[i + 1] = (Math.random() - 0.5) * 140;
+      positions[i + 2] = (Math.random() - 0.5) * 180;
 
-      // Color variation (ice blue to lavender)
-      colors[i] = 0.6 + Math.random() * 0.4;
-      colors[i + 1] = 0.7 + Math.random() * 0.3;
+      // Celestial color gradients
+      colors[i] = 0.65 + Math.random() * 0.35;
+      colors[i + 1] = 0.75 + Math.random() * 0.25;
       colors[i + 2] = 1.0;
     }
 
@@ -83,76 +100,89 @@ export default function DreamShift({ onExit }: DreamShiftProps) {
     particleGeom.setAttribute("color", new THREE.BufferAttribute(colors, 3));
 
     const particleMat = new THREE.PointsMaterial({
-      size: 0.35,
+      size: 0.38,
       vertexColors: true,
       transparent: true,
-      opacity: 0.75,
+      opacity: 0.8,
       blending: THREE.AdditiveBlending,
     });
 
     const particles = new THREE.Points(particleGeom, particleMat);
     scene.add(particles);
 
-    // Load Central Floating 3D Islands / Models
+    // Load Center Models
     const gltfLoader = new GLTFLoader();
 
-    gltfLoader.load("/models/dream_model.glb", (gltf) => {
-      const model = gltf.scene;
-      model.position.set(0, -2, -15);
-      model.scale.set(3.5, 3.5, 3.5);
-      scene.add(model);
-    });
+    gltfLoader.load(
+      "/models/dream_model.glb",
+      (gltf) => {
+        const model = gltf.scene;
+        model.position.set(0, -2.5, -16);
+        model.scale.set(3.6, 3.6, 3.6);
+        scene.add(model);
+      },
+      undefined,
+      (e) => console.warn("Dream model fallback:", e)
+    );
 
-    gltfLoader.load("/models/figure.glb", (gltf) => {
-      const model = gltf.scene;
-      model.position.set(0, 0, -2);
-      model.scale.set(1.5, 1.5, 1.5);
-      scene.add(model);
-    });
+    gltfLoader.load(
+      "/models/figure.glb",
+      (gltf) => {
+        const model = gltf.scene;
+        model.position.set(0, -0.5, -2.5);
+        model.scale.set(1.6, 1.6, 1.6);
+        scene.add(model);
+      },
+      undefined,
+      (e) => console.warn("Figure model fallback:", e)
+    );
 
-    // Memory Shards Nodes
+    // Interactive Shards
     const nodesData: MemoryNode[] = [
       {
+        id: "p2",
         title: "Portfolio v2",
         category: "Portfolio / 2026",
         year: "2026",
         image: "/images/1bkjcB7uulAIeieaHzJp5p1WdYU.jpg",
         link: "https://daikifujita.com",
         collected: false,
-        position: new THREE.Vector3(-10, 3, -12),
+        position: new THREE.Vector3(-11, 3.5, -12),
       },
       {
+        id: "inc",
         title: "INCEPTURE",
         category: "Gallery Site / 2025",
         year: "2025",
         image: "/images/UwSYwpPkghWNn8uZekuo1xu6Vc.png",
         link: "https://incepture.da-san333.com",
         collected: false,
-        position: new THREE.Vector3(12, -2, -18),
+        position: new THREE.Vector3(12.5, -2.5, -17),
       },
       {
+        id: "p1",
         title: "Portfolio v1",
         category: "Portfolio / 2025",
         year: "2025",
         image: "/images/6bqqivg1une0B2aPLSjxvyhqXs.png",
         link: "https://da-san333.com",
         collected: false,
-        position: new THREE.Vector3(0, 8, -25),
+        position: new THREE.Vector3(0, 8.5, -24),
       },
     ];
 
     const shardMeshes: THREE.Mesh[] = [];
     nodesData.forEach((node) => {
-      const geom = new THREE.IcosahedronGeometry(1.2, 1);
+      const geom = new THREE.OctahedronGeometry(1.2, 1);
       const mat = new THREE.MeshPhysicalMaterial({
-        color: 0x98d4ff,
-        emissive: 0x224488,
+        color: 0x90d5ff,
+        emissive: 0x1f3c7a,
         roughness: 0.1,
-        metalness: 0.1,
-        transmission: 0.85,
-        ior: 1.45,
+        metalness: 0.15,
+        transmission: 0.88,
+        ior: 1.48,
         transparent: true,
-        opacity: 0.9,
+        opacity: 0.92,
       });
 
       const mesh = new THREE.Mesh(geom, mat);
@@ -162,12 +192,15 @@ export default function DreamShift({ onExit }: DreamShiftProps) {
       shardMeshes.push(mesh);
     });
 
-    // Flight Navigation State
+    // Flight and Camera Controls
     const keys = { w: false, a: false, s: false, d: false, up: false, down: false };
     let mouseX = 0;
     let mouseY = 0;
     let targetCameraRotY = 0;
     let targetCameraRotX = 0;
+    let isDragging = false;
+    let prevPointerX = 0;
+    let prevPointerY = 0;
 
     const onKeyDown = (e: KeyboardEvent) => {
       const k = e.key.toLowerCase();
@@ -185,18 +218,39 @@ export default function DreamShift({ onExit }: DreamShiftProps) {
       if (k === "d" || k === "arrowright") keys.d = false;
     };
 
-    const onMouseMove = (e: MouseEvent) => {
+    const onPointerMove = (e: PointerEvent) => {
       mouseX = (e.clientX / window.innerWidth) * 2 - 1;
       mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
       targetCameraRotY = -mouseX * 0.45;
       targetCameraRotX = mouseY * 0.35;
+
+      if (isDragging) {
+        const dx = e.clientX - prevPointerX;
+        const dy = e.clientY - prevPointerY;
+        camera.position.x -= dx * 0.03;
+        camera.position.y += dy * 0.03;
+        prevPointerX = e.clientX;
+        prevPointerY = e.clientY;
+      }
+    };
+
+    const onPointerDown = (e: PointerEvent) => {
+      isDragging = true;
+      prevPointerX = e.clientX;
+      prevPointerY = e.clientY;
+    };
+
+    const onPointerUp = () => {
+      isDragging = false;
     };
 
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp);
-    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerdown", onPointerDown);
+    window.addEventListener("pointerup", onPointerUp);
 
-    // Raycaster for Shard collection on click
+    // Raycast interaction
     const raycaster = new THREE.Raycaster();
     const mouseVec = new THREE.Vector2();
 
@@ -211,11 +265,11 @@ export default function DreamShift({ onExit }: DreamShiftProps) {
         const hit = intersects[0].object as THREE.Mesh;
         const matched = nodesData.find((n) => n.mesh === hit);
         if (matched) {
-          getSoundEngine().playShimmer(880); // A5 high chime
+          getSoundEngine().playShimmer(880);
           if (!matched.collected) {
             matched.collected = true;
             setShardsCount((prev) => prev + 1);
-            setHudMessage(`MEMORY RETRIEVED: ${matched.title.toUpperCase()}`);
+            setHudMessage(`MEMORY RESTORED: ${matched.title.toUpperCase()}`);
           }
           setActiveShard(matched);
         }
@@ -224,7 +278,7 @@ export default function DreamShift({ onExit }: DreamShiftProps) {
 
     window.addEventListener("click", onClick);
 
-    // Main 3D Render Loop
+    // Main Animation Loop
     let animId: number;
     let clock = new THREE.Clock();
 
@@ -233,30 +287,40 @@ export default function DreamShift({ onExit }: DreamShiftProps) {
       const delta = clock.getDelta();
       const elapsed = clock.getElapsedTime();
 
-      // Camera flight movement
-      const speed = 12 * delta;
+      // Keyboard Speed
+      const speed = 14 * delta;
       if (keys.w) camera.position.z -= speed;
       if (keys.s) camera.position.z += speed;
       if (keys.a) camera.position.x -= speed;
       if (keys.d) camera.position.x += speed;
 
-      // Dampened rotation
-      camera.rotation.y += (targetCameraRotY - camera.rotation.y) * 0.05;
-      camera.rotation.x += (targetCameraRotX - camera.rotation.x) * 0.05;
+      // Camera rotation dampening
+      camera.rotation.y += (targetCameraRotY - camera.rotation.y) * 0.06;
+      camera.rotation.x += (targetCameraRotX - camera.rotation.x) * 0.06;
 
-      // Pulse particles
-      particles.rotation.y = elapsed * 0.02;
+      // Orbit particles slowly
+      particles.rotation.y = elapsed * 0.025;
 
       // Animate Shards
       nodesData.forEach((node, idx) => {
         if (node.mesh) {
           node.mesh.rotation.y = elapsed * 0.8 + idx;
           node.mesh.rotation.x = Math.sin(elapsed + idx) * 0.4;
-          node.mesh.position.y = node.position.y + Math.sin(elapsed * 1.5 + idx) * 0.6;
+          node.mesh.position.y = node.position.y + Math.sin(elapsed * 1.5 + idx) * 0.5;
+
+          // Proximity collision detection
+          const dist = camera.position.distanceTo(node.mesh.position);
+          if (dist < 4.5 && !node.collected) {
+            node.collected = true;
+            setShardsCount((prev) => prev + 1);
+            getSoundEngine().playShimmer(987.77); // B5 high chime
+            setHudMessage(`PROXIMITY SYNC: ${node.title.toUpperCase()} RETRIEVED`);
+            setActiveShard(node);
+          }
         }
       });
 
-      // Update coordinates
+      // Update HUD Coordinates
       setCoords({
         x: Math.round(camera.position.x * 10) / 10,
         y: Math.round(camera.position.y * 10) / 10,
@@ -267,13 +331,12 @@ export default function DreamShift({ onExit }: DreamShiftProps) {
     };
     render();
 
-    // Resize
     const onResize = () => {
-      const w = window.innerWidth;
-      const h = window.innerHeight;
-      camera.aspect = w / h;
+      width = window.innerWidth;
+      height = window.innerHeight;
+      camera.aspect = width / height;
       camera.updateProjectionMatrix();
-      renderer.setSize(w, h);
+      renderer.setSize(width, height);
     };
     window.addEventListener("resize", onResize);
 
@@ -281,7 +344,9 @@ export default function DreamShift({ onExit }: DreamShiftProps) {
       cancelAnimationFrame(animId);
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
-      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("pointerup", onPointerUp);
       window.removeEventListener("click", onClick);
       window.removeEventListener("resize", onResize);
       renderer.dispose();
@@ -289,11 +354,11 @@ export default function DreamShift({ onExit }: DreamShiftProps) {
   }, []);
 
   return (
-    <div className="fixed inset-0 z-40 bg-[#080711] overflow-hidden select-none animate-in fade-in duration-700">
+    <div className="fixed inset-0 z-40 bg-[#06050e] overflow-hidden select-none animate-in fade-in duration-700">
       <canvas ref={canvasRef} className="absolute inset-0 w-full h-full cursor-crosshair" />
 
       {/* Atmospheric Vignette & Grain */}
-      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,transparent_40%,rgba(5,3,10,0.8)_100%)]" />
+      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,transparent_35%,rgba(4,2,8,0.85)_100%)]" />
 
       {/* Dream HUD Overlay */}
       <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-6 md:p-10 text-white font-mono text-xs">
@@ -302,11 +367,19 @@ export default function DreamShift({ onExit }: DreamShiftProps) {
           <div className="flex items-center gap-4">
             <span className="inline-block w-2.5 h-2.5 rounded-full bg-indigo-400 animate-ping" />
             <span className="tracking-widest uppercase text-indigo-200">
-              [ 夢モード // DREAM ENGINE ACTIVE ]
+              [ 夢モード // THREE.JS DREAM ENGINE ]
             </span>
           </div>
 
-          <div className="flex items-center gap-6 pointer-events-auto">
+          <div className="flex items-center gap-4 sm:gap-6 pointer-events-auto">
+            {/* Audio Toggle in Dream HUD */}
+            <button
+              onClick={handleSoundToggle}
+              className="border border-white/20 bg-black/40 backdrop-blur-sm px-3.5 py-1.5 rounded-full text-indigo-200 hover:text-white transition-colors cursor-pointer"
+            >
+              {soundOn ? "SOUND: ON" : "SOUND: OFF"}
+            </button>
+
             <div className="border border-white/20 bg-black/40 backdrop-blur-sm px-4 py-1.5 rounded-full text-indigo-300">
               SHARDS RETRIEVED: {shardsCount} / 3
             </div>
@@ -316,25 +389,25 @@ export default function DreamShift({ onExit }: DreamShiftProps) {
                 getSoundEngine().playTransition(false);
                 onExit();
               }}
-              className="px-4 py-1.5 rounded-full bg-white text-black font-semibold uppercase tracking-wider hover:bg-neutral-200 transition-colors cursor-pointer"
+              className="px-4 py-1.5 rounded-full bg-white text-black font-semibold uppercase tracking-wider hover:bg-neutral-200 transition-colors cursor-pointer shadow-lg"
             >
               Wake Up [ESC] ↗
             </button>
           </div>
         </div>
 
-        {/* Center Prompt / Shard Card Modal */}
+        {/* Shard Card Lightbox Modal */}
         {activeShard && (
-          <div className="pointer-events-auto self-center max-w-md w-full bg-neutral-900/90 border border-white/20 backdrop-blur-xl p-6 rounded-md shadow-2xl text-white flex flex-col gap-4 animate-in zoom-in-95 duration-200">
+          <div className="pointer-events-auto self-center max-w-md w-full bg-neutral-900/95 border border-white/20 backdrop-blur-2xl p-6 rounded-md shadow-2xl text-white flex flex-col gap-4 animate-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <span className="text-[10px] tracking-widest text-indigo-300 uppercase">
-                MEMORY FRAGMENT RESTORED
+                MEMORY SHARD RETRIEVED
               </span>
               <button
                 onClick={() => setActiveShard(null)}
-                className="text-neutral-400 hover:text-white font-mono"
+                className="text-neutral-400 hover:text-white font-mono cursor-pointer"
               >
-                ✕ CLOSE
+                ✕ [CLOSE]
               </button>
             </div>
 
@@ -358,7 +431,7 @@ export default function DreamShift({ onExit }: DreamShiftProps) {
               rel="noopener noreferrer"
               className="block w-full py-2.5 text-center bg-white text-black font-semibold text-xs tracking-wider uppercase rounded hover:bg-neutral-200 transition-colors"
             >
-              Open Reality Archive ↗
+              Open Project Archive ↗
             </a>
           </div>
         )}
@@ -371,7 +444,7 @@ export default function DreamShift({ onExit }: DreamShiftProps) {
           </div>
 
           <div className="text-[10px] tracking-widest text-neutral-500 uppercase">
-            [ Three.js WebGL Engine · Procedural Cosmos ]
+            [ Three.js WebGL Engine · Daiki Fujita ]
           </div>
         </div>
       </div>
