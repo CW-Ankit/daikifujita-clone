@@ -443,6 +443,36 @@ export default function DreamShift({ onExit }: DreamShiftProps) {
             <span>COORDINATES: X:{coords.x} Y:{coords.y} Z:{coords.z}</span>
           </div>
 
+          {/* Mobile Touch Flight Pad */}
+          <div className="sm:hidden flex items-center gap-2 pointer-events-auto my-2">
+            <button
+              onPointerDown={() => {
+                const e = new KeyboardEvent("keydown", { key: "w" });
+                window.dispatchEvent(e);
+              }}
+              onPointerUp={() => {
+                const e = new KeyboardEvent("keyup", { key: "w" });
+                window.dispatchEvent(e);
+              }}
+              className="px-3 py-1.5 bg-white/10 active:bg-white/30 border border-white/20 rounded text-[11px] font-mono select-none"
+            >
+              ▲ FWD
+            </button>
+            <button
+              onPointerDown={() => {
+                const e = new KeyboardEvent("keydown", { key: "s" });
+                window.dispatchEvent(e);
+              }}
+              onPointerUp={() => {
+                const e = new KeyboardEvent("keyup", { key: "s" });
+                window.dispatchEvent(e);
+              }}
+              className="px-3 py-1.5 bg-white/10 active:bg-white/30 border border-white/20 rounded text-[11px] font-mono select-none"
+            >
+              ▼ BACK
+            </button>
+          </div>
+
           <div className="text-[10px] tracking-widest text-neutral-500 uppercase">
             [ Three.js WebGL Engine · Daiki Fujita ]
           </div>

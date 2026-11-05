@@ -168,19 +168,23 @@ export default function ShardOfMemory({ className = "", onHover }: ShardOfMemory
     };
     animate();
 
-    // Handle Resize
+    // Handle Resize with ResizeObserver & Window Resize
     const handleResize = () => {
       if (!container) return;
-      const w = container.clientWidth;
-      const h = container.clientHeight;
+      const w = container.clientWidth || 380;
+      const h = container.clientHeight || 380;
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
     };
+
+    const resizeObserver = new ResizeObserver(() => handleResize());
+    resizeObserver.observe(container);
     window.addEventListener("resize", handleResize);
 
     return () => {
       cancelAnimationFrame(animId);
+      resizeObserver.disconnect();
       window.removeEventListener("resize", handleResize);
       container.removeEventListener("mousemove", handleMouseMove);
       container.removeEventListener("mouseenter", handleMouseEnter);
