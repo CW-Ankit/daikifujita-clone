@@ -5,11 +5,13 @@ import AwakeView from "@/components/AwakeView";
 import DreamShift from "@/components/DreamShift";
 import RetroMode from "@/components/RetroMode";
 import LocalClock from "@/components/LocalClock";
+import Preloader from "@/components/Preloader";
 import { getSoundEngine } from "@/lib/soundEngine";
 
 export default function Home() {
   const [mode, setMode] = useState<"awake" | "dream" | "retro">("awake");
   const [mounted, setMounted] = useState(false);
+  const [booting, setBooting] = useState(true);
 
   useEffect(() => {
     setMounted(true);
@@ -47,6 +49,11 @@ export default function Home() {
 
   return (
     <main className="relative min-h-screen bg-[#ECEAE4] text-[#121212] selection:bg-[#121212] selection:text-white">
+      {/* Loading Screen / Preloader with Enter Button */}
+      {booting && (
+        <Preloader onDone={() => setBooting(false)} />
+      )}
+
       {/* Fixed Site Header matching original Framer component structure */}
       <header
         className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between pointer-events-none px-6 md:px-10 py-4.5 text-white"
